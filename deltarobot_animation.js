@@ -44,7 +44,7 @@ function init() {
 
     createGradientBackground();
     createGround();
-    loadModel('원위치');
+    loadModel('원위치'); // Load default model
 
     animate();
 }
@@ -123,7 +123,7 @@ function animate() {
 
 // Update the model based on the current position
 function updateModel() {
-    const position = getPosition();
+    const position = getPosition() || '원위치'; // Use default position if getPosition() returns null
     document.getElementById('positionDisplay').innerText = `현재위치: ${position}`;
     loadModel(position);
 }

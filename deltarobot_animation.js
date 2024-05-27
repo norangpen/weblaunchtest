@@ -5,7 +5,8 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 let scene, camera, renderer, loader, controls;
 let staticModel, mixer, clock;
 const animationMixers = {};
-let activeMixer = null;
+const animationActions = {};
+let activeAction = null;
 
 init();
 loadStaticModel();  // Load default model and animations
@@ -55,7 +56,9 @@ function onWindowResize() {
 function animate() {
     requestAnimationFrame(animate);
     const delta = clock.getDelta();
-    if (activeMixer) activeMixer.update(delta);
+    for (let mixer of Object.values(animationMixers)) {
+        mixer.update(delta);
+    }
     controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
     renderer.render(scene, camera);
 }
@@ -64,6 +67,7 @@ function loadStaticModel() {
     loader.load('models/StaticModel.gltf', function (gltf) {
         staticModel = gltf.scene;
         scene.add(staticModel);
+
         mixer = new THREE.AnimationMixer(staticModel);
         animationMixers['staticModel'] = mixer;
 
@@ -88,7 +92,8 @@ function loadAnimation(path, name) {
 
         const clips = gltf.animations;
         if (clips.length > 0) {
-            mixer.clipAction(clips[0]).play();
+            const action = mixer.clipAction(clips[0]);
+            animationActions[name] = action;
         }
     }, undefined, function (error) {
         console.error(`Error loading ${name}:`, error);
@@ -97,48 +102,38 @@ function loadAnimation(path, name) {
 
 function updateModelBasedOnPosition() {
     const position = window.getPosition();
-    let targetMixer = null;
-    let targetModel = null;
+    let targetAction = null;
 
     switch (position) {
         case "원위치":
-            targetMixer = animationMixers['staticModel'];
-            targetModel = staticModel;
+            targetAction = animationActions['staticModel'] ? animationActions['staticModel'] : null;
             break;
         case "1번 좌표":
-            targetMixer = animationMixers['animation1'];
-            targetModel = scene.children.find(child => child.name === 'animation1');
+            targetAction = animationActions['animation1'];
             break;
         case "2번 좌표":
-            targetMixer = animationMixers['animation2'];
-            targetModel = scene.children.find(child => child.name === 'animation2');
+            targetAction = animationActions['animation2'];
             break;
         case "3번 좌표":
-            targetMixer = animationMixers['animation3'];
-            targetModel = scene.children.find(child => child.name === 'animation3');
+            targetAction = animationActions['animation3'];
             break;
         case "4번 좌표":
-            targetMixer = animationMixers['animation4'];
-            targetModel = scene.children.find(child => child.name === 'animation4');
+            targetAction = animationActions['animation4'];
             break;
         default:
-            targetMixer = animationMixers['staticModel'];
-            targetModel = staticModel;
+            targetAction = animationActions['staticModel'] ? animationActions['staticModel'] : null;
     }
 
-    if (targetMixer !== activeMixer) {
-        if (activeMixer) {
-            activeMixer.stopAllAction();
+    if (targetAction && targetAction !== activeAction) {
+        if (activeAction) {
+            activeAction.fadeOut(0.5);
         }
-        if (targetMixer) {
-            targetMixer.update(0);
-            targetMixer.play();
-        }
-        activeMixer = targetMixer;
+        targetAction.reset().fadeIn(0.5).play();
+        activeAction = targetAction;
     }
 
     scene.children.forEach(child => {
-        if (child === targetModel) {
+        if (child === staticModel || (targetAction && child === targetAction.getRoot())) {
             child.visible = true;
         } else {
             child.visible = false;

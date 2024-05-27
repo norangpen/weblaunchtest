@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>델타로봇 현재 좌표</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="position.js"></script>
+    <script src="randomposition.js"></script>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="#">홈</a></li>
+            <li><a href="#">서비스</a></li>
+            <li><a href="#">프로젝트</a></li>
+            <li><a href="#">회사 소개</a></li>
+            <li><a href="#">연락처</a></li>
+            <li><a href="tracking.html">Delta Robot 동선</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <!-- 델타 로봇 사진과 현재 위치 -->
+        <div id="robot-content">
+            <iframe src="index_delta_ani.html" width="1350" height="500" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
+        </div>
+        <div id="position">
+            현재 델타 로봇의 위치: <span id="coordinates">로딩 중...</span>
+        </div>
+    </div>
+    <div class="bottom-section">
+        <h1>회사 재고 현황</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>부품코드</th>
+                    <th>품목</th>
+                    <th>수량</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 데이터가 여기에 추가됩니다 -->
+                <script src="script2.js"></script>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        // Update the coordinates display with the current position from position.js
+        function updateCoordinatesDisplay() {
+            const position = getPosition();
+            document.getElementById('coordinates').innerText = position ? position : '로딩 중...';
+        }
+
+        // Update coordinates display every time position changes
+        setInterval(updateCoordinatesDisplay, 1000);
+    </script>
+</body>
+</html>

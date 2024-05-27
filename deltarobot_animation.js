@@ -4,8 +4,8 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples
 
 let scene, camera, renderer, loader, controls;
 let staticModel, mixer, clock;
-const animationActions = {};
-let activeAction;
+const animationMixers = {};
+let activeMixer = null;
 
 init();
 loadStaticModel();  // Load default model and animations
@@ -55,7 +55,7 @@ function onWindowResize() {
 function animate() {
     requestAnimationFrame(animate);
     const delta = clock.getDelta();
-    if (mixer) mixer.update(delta);
+    if (activeMixer) activeMixer.update(delta);
     controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
     renderer.render(scene, camera);
 }
@@ -64,8 +64,8 @@ function loadStaticModel() {
     loader.load('models/StaticModel.gltf', function (gltf) {
         staticModel = gltf.scene;
         scene.add(staticModel);
-
         mixer = new THREE.AnimationMixer(staticModel);
+        animationMixers['staticModel'] = mixer;
 
         // Load animations
         loadAnimation('models/Animation1.gltf', 'animation1');
@@ -79,9 +79,16 @@ function loadStaticModel() {
 
 function loadAnimation(path, name) {
     loader.load(path, function (gltf) {
+        const model = gltf.scene;
+        model.visible = false;
+        scene.add(model);
+
+        const mixer = new THREE.AnimationMixer(model);
+        animationMixers[name] = mixer;
+
         const clips = gltf.animations;
         if (clips.length > 0) {
-            animationActions[name] = mixer.clipAction(clips[0]);
+            mixer.clipAction(clips[0]).play();
         }
     }, undefined, function (error) {
         console.error(`Error loading ${name}:`, error);
@@ -90,41 +97,57 @@ function loadAnimation(path, name) {
 
 function updateModelBasedOnPosition() {
     const position = window.getPosition();
-    let nextAction;
+    let targetMixer = null;
+    let targetModel = null;
 
     switch (position) {
         case "원위치":
-            nextAction = null;
+            targetMixer = animationMixers['staticModel'];
+            targetModel = staticModel;
             break;
         case "1번 좌표":
-            nextAction = animationActions['animation1'];
+            targetMixer = animationMixers['animation1'];
+            targetModel = scene.children.find(child => child.name === 'animation1');
             break;
         case "2번 좌표":
-            nextAction = animationActions['animation2'];
+            targetMixer = animationMixers['animation2'];
+            targetModel = scene.children.find(child => child.name === 'animation2');
             break;
         case "3번 좌표":
-            nextAction = animationActions['animation3'];
+            targetMixer = animationMixers['animation3'];
+            targetModel = scene.children.find(child => child.name === 'animation3');
             break;
         case "4번 좌표":
-            nextAction = animationActions['animation4'];
+            targetMixer = animationMixers['animation4'];
+            targetModel = scene.children.find(child => child.name === 'animation4');
             break;
         default:
-            nextAction = null;
+            targetMixer = animationMixers['staticModel'];
+            targetModel = staticModel;
     }
 
-    if (nextAction !== activeAction) {
-        if (activeAction) {
-            activeAction.fadeOut(0.5);
+    if (targetMixer !== activeMixer) {
+        if (activeMixer) {
+            activeMixer.stopAllAction();
         }
-        if (nextAction) {
-            nextAction.reset().fadeIn(0.5).play();
+        if (targetMixer) {
+            targetMixer.update(0);
+            targetMixer.play();
         }
-        activeAction = nextAction;
+        activeMixer = targetMixer;
     }
+
+    scene.children.forEach(child => {
+        if (child === targetModel) {
+            child.visible = true;
+        } else {
+            child.visible = false;
+        }
+    });
 }
 
 // Call updateModelBasedOnPosition every time the position is updated
-window.setInterval(updateModelBasedOnPosition, 3000);
+window.setInterval(updateModelBasedOnPosition, 300);
 
 function createGradientBackground() {
     const vertexShader = `

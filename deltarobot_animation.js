@@ -2,18 +2,20 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
 
-let scene, camera, renderer, loader, controls;
-let staticModel, mixer, clock;
-const animationMixers = {};
-const animationActions = {};
-let activeAction = null;
+let scene, camera, renderer, loader, controls, currentModel;
 
-init();
-loadStaticModel();  // Load default model and animations
+const modelPaths = {
+    "원위치": 'models/StaticModel.gltf',
+    "1번 좌표": 'models/Animation1.gltf',
+    "2번 좌표": 'models/Animation2.gltf',
+    "3번 좌표": 'models/Animation3.gltf',
+    "4번 좌표": 'models/Animation4.gltf'
+};
 
+// Initialize the scene
 function init() {
     scene = new THREE.Scene();
-
+    
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(2, 2, 5);
 
@@ -37,113 +39,15 @@ function init() {
     scene.add(directionalLight2);
 
     loader = new GLTFLoader();
-    clock = new THREE.Clock();
 
     createGradientBackground();
     createGround();
-
-    window.addEventListener('resize', onWindowResize, false);
+    loadModel('원위치');
 
     animate();
 }
 
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function animate() {
-    requestAnimationFrame(animate);
-    const delta = clock.getDelta();
-    for (let mixer of Object.values(animationMixers)) {
-        mixer.update(delta);
-    }
-    controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
-    renderer.render(scene, camera);
-}
-
-function loadStaticModel() {
-    loader.load('models/StaticModel.gltf', function (gltf) {
-        staticModel = gltf.scene;
-        scene.add(staticModel);
-
-        mixer = new THREE.AnimationMixer(staticModel);
-        animationMixers['staticModel'] = mixer;
-
-        // Load animations
-        loadAnimation('models/Animation1.gltf', 'animation1');
-        loadAnimation('models/Animation2.gltf', 'animation2');
-        loadAnimation('models/Animation3.gltf', 'animation3');
-        loadAnimation('models/Animation4.gltf', 'animation4');
-    }, undefined, function (error) {
-        console.error('Error loading static model:', error);
-    });
-}
-
-function loadAnimation(path, name) {
-    loader.load(path, function (gltf) {
-        const model = gltf.scene;
-        model.visible = false;
-        scene.add(model);
-
-        const mixer = new THREE.AnimationMixer(model);
-        animationMixers[name] = mixer;
-
-        const clips = gltf.animations;
-        if (clips.length > 0) {
-            const action = mixer.clipAction(clips[0]);
-            animationActions[name] = action;
-        }
-    }, undefined, function (error) {
-        console.error(`Error loading ${name}:`, error);
-    });
-}
-
-function updateModelBasedOnPosition() {
-    const position = window.getPosition();
-    let targetAction = null;
-
-    switch (position) {
-        case "원위치":
-            targetAction = animationActions['staticModel'] ? animationActions['staticModel'] : null;
-            break;
-        case "1번 좌표":
-            targetAction = animationActions['animation1'];
-            break;
-        case "2번 좌표":
-            targetAction = animationActions['animation2'];
-            break;
-        case "3번 좌표":
-            targetAction = animationActions['animation3'];
-            break;
-        case "4번 좌표":
-            targetAction = animationActions['animation4'];
-            break;
-        default:
-            targetAction = animationActions['staticModel'] ? animationActions['staticModel'] : null;
-    }
-
-    if (targetAction && targetAction !== activeAction) {
-        if (activeAction) {
-            activeAction.fadeOut(0.5);
-        }
-        targetAction.reset().fadeIn(0.5).play();
-        activeAction = targetAction;
-    }
-
-    scene.children.forEach(child => {
-        if (child === staticModel || (targetAction && child === targetAction.getRoot())) {
-            child.visible = true;
-        } else {
-            child.visible = false;
-        }
-    });
-}
-
-// Call updateModelBasedOnPosition every time the position is updated
-window.setInterval(updateModelBasedOnPosition, 300);
-
+// Create a gradient background
 function createGradientBackground() {
     const vertexShader = `
         varying vec2 vUv;
@@ -174,6 +78,7 @@ function createGradientBackground() {
     scene.add(sphere);
 }
 
+// Create a textured ground plane
 function createGround() {
     const textureLoader = new THREE.TextureLoader();
     const groundTexture = textureLoader.load('https://threejs.org/examples/textures/grid.png');
@@ -188,3 +93,44 @@ function createGround() {
     ground.receiveShadow = true;
     scene.add(ground);
 }
+
+// Load the model based on the position
+function loadModel(position) {
+    const path = modelPaths[position];
+    if (currentModel) {
+        scene.remove(currentModel);
+    }
+    loader.load(path, function (gltf) {
+        currentModel = gltf.scene;
+        scene.add(currentModel);
+    }, undefined, function (error) {
+        console.error(error);
+    });
+}
+
+// Animate the scene
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+// Update the model based on the current position
+function updateModel() {
+    const position = getPosition();
+    document.getElementById('positionDisplay').innerText = `현재위치: ${position}`;
+    loadModel(position);
+}
+
+// Initialize the scene
+init();
+
+// Update the model every second based on the current position
+setInterval(updateModel, 1000);
+
+// Adjust the renderer size when the window is resized
+window.addEventListener('resize', function () {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});

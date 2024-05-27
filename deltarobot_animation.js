@@ -4,7 +4,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
 
-let scene, camera, renderer, loader, controls, currentModel;
+let scene, camera, renderer, loader, controls, currentModel, currentPosition;
 
 const modelPaths = {
     "원위치": 'models/StaticModel.gltf',
@@ -124,8 +124,11 @@ function animate() {
 // Update the model based on the current position
 function updateModel() {
     const position = getPosition() || '원위치'; // Use default position if getPosition() returns null
-    document.getElementById('positionDisplay').innerText = `현재위치: ${position}`;
-    loadModel(position);
+    if (position !== currentPosition) {
+        document.getElementById('positionDisplay').innerText = `현재위치: ${position}`;
+        loadModel(position);
+        currentPosition = position;
+    }
 }
 
 // Initialize the scene

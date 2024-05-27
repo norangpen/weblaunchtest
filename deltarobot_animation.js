@@ -1,3 +1,5 @@
+// deltarobot_animation.js
+
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
@@ -97,6 +99,10 @@ function createGround() {
 // Load the model based on the position
 function loadModel(position) {
     const path = modelPaths[position];
+    if (!path) {
+        console.error(`Model path for position "${position}" is not defined.`);
+        return;
+    }
     if (currentModel) {
         scene.remove(currentModel);
     }
@@ -104,7 +110,7 @@ function loadModel(position) {
         currentModel = gltf.scene;
         scene.add(currentModel);
     }, undefined, function (error) {
-        console.error(error);
+        console.error(`Failed to load model from path "${path}":`, error);
     });
 }
 

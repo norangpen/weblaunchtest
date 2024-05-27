@@ -1,9 +1,9 @@
-﻿import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
 
 let scene, camera, renderer, loader, controls;
-let currentModel, staticModel, mixer, clock;
+let staticModel, mixer, clock;
 const animationActions = {};
 let activeAction;
 
@@ -73,7 +73,7 @@ function loadStaticModel() {
         loadAnimation('models/Animation3.gltf', 'animation3');
         loadAnimation('models/Animation4.gltf', 'animation4');
     }, undefined, function (error) {
-        console.error(error);
+        console.error('Error loading static model:', error);
     });
 }
 
@@ -82,13 +82,9 @@ function loadAnimation(path, name) {
         const clips = gltf.animations;
         if (clips.length > 0) {
             animationActions[name] = mixer.clipAction(clips[0]);
-            if (name === 'animation1') {
-                activeAction = animationActions[name];
-                activeAction.play();
-            }
         }
     }, undefined, function (error) {
-        console.error(error);
+        console.error(`Error loading ${name}:`, error);
     });
 }
 
@@ -116,17 +112,19 @@ function updateModelBasedOnPosition() {
             nextAction = null;
     }
 
-    if (nextAction && nextAction !== activeAction) {
+    if (nextAction !== activeAction) {
         if (activeAction) {
             activeAction.fadeOut(0.5);
         }
-        nextAction.reset().fadeIn(0.5).play();
+        if (nextAction) {
+            nextAction.reset().fadeIn(0.5).play();
+        }
         activeAction = nextAction;
     }
 }
 
 // Call updateModelBasedOnPosition every time the position is updated
-window.setInterval(updateModelBasedOnPosition, 300);
+window.setInterval(updateModelBasedOnPosition, 3000);
 
 function createGradientBackground() {
     const vertexShader = `

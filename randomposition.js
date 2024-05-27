@@ -17,4 +17,4 @@ function updatePosition() {
     }
 }
 
-window.setInterval(updatePosition, 7000);
+window.setInterval(updatePosition, 3000);

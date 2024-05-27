@@ -4,7 +4,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.mod
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.118/examples/jsm/controls/OrbitControls.js';
 
-let scene, camera, renderer, loader, controls, currentModel, currentPosition;
+let scene, camera, renderer, loader, controls, currentModel, mixer, currentPosition;
 
 const modelPaths = {
     "원위치": 'models/StaticModel.gltf',
@@ -105,10 +105,21 @@ function loadModel(position) {
     }
     if (currentModel) {
         scene.remove(currentModel);
+        if (mixer) {
+            mixer.stopAllAction();
+            mixer = null;
+        }
     }
     loader.load(path, function (gltf) {
         currentModel = gltf.scene;
         scene.add(currentModel);
+
+        if (gltf.animations && gltf.animations.length > 0) {
+            mixer = new THREE.AnimationMixer(currentModel);
+            gltf.animations.forEach((clip) => {
+                mixer.clipAction(clip).play();
+            });
+        }
     }, undefined, function (error) {
         console.error(`Failed to load model from path "${path}":`, error);
     });
@@ -117,6 +128,9 @@ function loadModel(position) {
 // Animate the scene
 function animate() {
     requestAnimationFrame(animate);
+    if (mixer) {
+        mixer.update(0.016); // Assuming a frame rate of 60fps
+    }
     controls.update();
     renderer.render(scene, camera);
 }
